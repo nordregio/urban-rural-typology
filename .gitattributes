@@ -1,0 +1,2 @@
+layers/column_layer.json filter=lfs diff=lfs merge=lfs -text
+layers/polygon_layer.json filter=lfs diff=lfs merge=lfs -text

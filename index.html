@@ -1,0 +1,442 @@
+<!doctype html>
+<html data-theme="light">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>Nordic Urban-Rural Typology</title>
+    <script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
+    <link
+      href="https://unpkg.com/deck.gl@^9.0.0/dist/stylesheet.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/maplibre-gl@3.0.0/dist/maplibre-gl.js"></script>
+    <link
+      href="https://unpkg.com/maplibre-gl@3.0.0/dist/maplibre-gl.css"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+     body {
+       width: 100vw;
+       height: 100vh;
+       margin: 0;
+       overflow: hidden;
+       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+     }
+
+     #deck-container {
+       width: 100vw;
+       height: 100vh;
+     }
+
+     #deck-container canvas {
+       z-index: 1;
+       background: none;
+     }
+
+     .deck-widget {
+       --button-size: 36px;
+     }
+
+     #menu-panel {
+       position: absolute;
+       top: 20px;
+       right: 20px;
+       width: 280px;
+       background: rgba(255, 255, 255, 0.95);
+       backdrop-filter: blur(10px);
+       border-radius: 12px;
+       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+       border: 1px solid rgba(0, 0, 0, 0.08);
+       padding: 20px;
+       z-index: 10;
+       transition: all 0.3s ease;
+       transform: translateX(0);
+     }
+
+     #menu-panel.hidden {
+       transform: translateX(calc(100% + 40px));
+     }
+
+     #toggle-btn {
+       position: absolute;
+       top: 20px;
+       right: 20px;
+       background: rgba(255, 255, 255, 0.95);
+       backdrop-filter: blur(10px);
+       border: 1px solid rgba(0, 0, 0, 0.08);
+       border-radius: 8px;
+       padding: 8px 12px;
+       cursor: pointer;
+       font-size: 12px;
+       font-weight: 500;
+       color: #374151;
+       z-index: 11;
+       display: none;
+       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+       transition: all 0.2s ease;
+     }
+
+     #toggle-btn:hover {
+       background: rgba(255, 255, 255, 1);
+       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+     }
+
+     #toggle-btn.show {
+       display: block;
+     }
+
+     .panel-header {
+       margin-bottom: 16px;
+       padding-bottom: 12px;
+       border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+     }
+
+     .panel-title {
+       font-size: 16px;
+       font-weight: 600;
+       color: #111827;
+       margin: 0 0 4px 0;
+     }
+
+     .panel-subtitle {
+       font-size: 12px;
+       color: #6B7280;
+       margin: 0;
+     }
+
+     .info-section {
+       font-size: 12px;
+       line-height: 1.5;
+       color: #4B5563;
+     }
+
+     kbd {
+       display: inline-block;
+       padding: 2px 4px;
+       font-size: 0.8em;
+       background-color: #f3f3f3;
+       border: 1px solid #ccc;
+       border-radius: 4px;
+       box-shadow: inset 0 -1px 0 #bbb;
+       color: #333;
+     }
+
+     .legend {
+       margin: 16px 0;
+     }
+
+     .legend-item {
+       display: flex;
+       align-items: center;
+       margin-bottom: 8px;
+       font-size: 11px;
+       position: relative;
+       cursor: help;
+       padding: 4px;
+       border-radius: 4px;
+       transition: background-color 0.2s ease;
+     }
+
+     .legend-item:hover {
+       background-color: rgba(0, 0, 0, 0.03);
+     }
+
+     .legend-color {
+       width: 16px;
+       height: 16px;
+       border-radius: 3px;
+       margin-right: 8px;
+       flex-shrink: 0;
+       border: 1px solid rgba(0, 0, 0, 0.1);
+     }
+
+     .legend-label {
+       font-weight: 400;
+       color: #374151;
+     }
+
+     .legend-tooltip {
+       position: absolute;
+       right: 100%;
+       top: 50%;
+       transform: translateY(-50%);
+       margin-left: 12px;
+       background: rgba(255, 255, 255, 0.98);
+       backdrop-filter: blur(10px);
+       border: 1px solid rgba(0, 0, 0, 0.08);
+       border-radius: 8px;
+       padding: 12px;
+       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+       font-size: 11px;
+       line-height: 1.4;
+       color: #374151;
+       width: 260px;
+       z-index: 1000;
+       opacity: 0;
+       pointer-events: none;
+       transition: opacity 0.2s ease;
+     }
+
+     .legend-item:hover .legend-tooltip {
+       opacity: 1;
+     }
+
+     .legend-tooltip strong {
+       color: #111827;
+       font-weight: 600;
+     }
+
+     a {
+       color: inherit;
+       text-decoration: underline;
+     }
+
+     a:hover {
+       text-decoration: underline;
+     }
+
+     .close-btn {
+       position: absolute;
+       top: 12px;
+       right: 12px;
+       background: none;
+       border: none;
+       font-size: 16px;
+       color: #9CA3AF;
+       cursor: pointer;
+       width: 24px;
+       height: 24px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       border-radius: 4px;
+       transition: all 0.2s ease;
+     }
+
+     .close-btn:hover {
+       background: #F3F4F6;
+       color: #374151;
+     }
+
+     @media (max-width: 768px) {
+       #menu-panel {
+         width: 260px;
+         top: 16px;
+         right: 16px;
+         padding: 16px;
+       }
+
+       #toggle-btn {
+         top: 16px;
+         right: 16px;
+       }
+
+       .legend-tooltip {
+         left: -270px;
+         width: 240px;
+       }
+     }
+
+     @media (max-width: 640px) {
+       #menu-panel {
+         width: calc(100vw - 32px);
+         max-width: 300px;
+       }
+
+       .legend-tooltip {
+         left: -250px;
+         width: 220px;
+       }
+     }
+    </style>
+  </head>
+
+  <body>
+    <button id="toggle-btn" onclick="toggleMenu()">Show Info</button>
+
+    <div id="menu-panel">
+      <button class="close-btn" onclick="toggleMenu()">×</button>
+
+      <div class="panel-header">
+        <h2 class="panel-title">Nordic Urban-Rural Typology</h2>
+        <p class="panel-subtitle">A new tool for analysis across the urban-rural continuum</p>
+      </div>
+
+      <div class="info-section">
+        <p>Nordic urban-rural typology is a grid-based classification of areas developed by the Nordic Thematic groups 2021-2024 to enable more accurate cross-Nordic statistical comparisons. The seven classes are defined based on population density, proximity measures and land cover parameters.</p>
+        <p><strong>What are the classes?</strong> Hover over each class for detailed description.</p>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(104, 62, 12);"></div>
+          <span class="legend-label">Inner urban area</span>
+          <div class="legend-tooltip">
+            <strong>Inner urban area</strong> is the most densely populated part of the urban core. Urban cores are clustered cells summing up to at least 15,000 inhabitants, and these are divided into Inner and Outer urban areas based on density criterion (population density and building floor space).
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(165, 109, 52);"></div>
+          <span class="legend-label">Outer urban area</span>
+          <div class="legend-tooltip">
+            <strong>Outer urban area</strong> is the least densely populated part of the urban core. Urban core areas are clustered cells with at least 15,000 inhabitants, and these are divided into Inner and Outer urban areas based on density criterions (population density and building floorspace).
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(203, 166, 124);"></div>
+          <span class="legend-label">Peri-urban area</span>
+          <div class="legend-tooltip">
+            <strong>Peri-urban area</strong> is the intermediate zone between urban core and the rural. It is based on generalized travel-time estimates from the edges of outer urban areas (6 min travel-time zones) and smaller urban settlement (4.5 min travel-time zones).
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(221, 196, 171);"></div>
+          <span class="legend-label">Local centre in rural area</span>
+          <div class="legend-tooltip">
+            <strong>Local centers in rural areas</strong> are population centers located outside urban areas, small towns and large parish villages where population is between 5,000-14,999 inhabitants.
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(194, 216, 170);"></div>
+          <span class="legend-label">Rural area close to urban</span>
+          <div class="legend-tooltip">
+            <strong>Rural areas close to urban areas</strong> have a rural character that are functionally connected and close to urban areas. In average this means 20-30 minutes' drive time from the edge of outer urban area. This class overwrites the area classes 'Rural heartland' and 'Sparsely populated rural areas'.
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(163, 191, 124);"></div>
+          <span class="legend-label">Rural heartland</span>
+          <div class="legend-tooltip">
+            <strong>Rural heartland.</strong> Rural areas with intensive land use, with a relatively dense population and a diverse economic structure at the local level. Most of the agricultural land is in this class.
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: rgb(105, 143, 92);"></div>
+          <span class="legend-label">Sparsely populated rural area</span>
+          <div class="legend-tooltip">
+            <strong>Sparsely populated rural areas.</strong> Sparsely populated areas with dispersed small settlements that are located at a distance from each other. Land cover is usually forest, mountains, or natural grassland.
+          </div>
+        </div>
+
+        <p>Read more about the typology <a href="https://pub.nordregio.org/r-2024-9-towards-a-grid-based-nordic-territorial-typology/index.html" target="_blank">here</a>.</p>
+        <p>Hold <kbd>CTRL</kbd> to rotate the map and zoom in to explore the distribution of classes in your area.</p>
+      </div>
+
+    </div>
+
+    <script>
+     const {
+       DeckGL,
+       MapView,
+       ColumnLayer,
+       PolygonLayer,
+       CompassWidget,
+       ZoomWidget,
+     } = deck;
+
+     const polygon_layer = new PolygonLayer({
+       id: "PolygonLayer",
+       data: "layers/polygon_layer.json",
+       pickable: false,
+       getPolygon: (d) => d,
+       filled: false,
+       getLineColor: [211, 211, 211, 255],
+       lineWidthMinPixels: 1,
+     });
+
+     function getTooltip({ object }) {
+       return (
+         object && {
+           html: `<b>${object.nordic_type}</b><br>${object.munname}`,
+           style: {
+             background: "rgba(255, 255, 255, 0.95)",
+             color: "#374151",
+             "font-family": '"Inter", Arial',
+             "font-size": "11px",
+             "border-radius": "6px",
+             "padding": "8px 10px",
+             "box-shadow": "0 4px 12px rgba(0, 0, 0, 0.15)",
+             "border": "1px solid rgba(0, 0, 0, 0.08)",
+           },
+         }
+       );
+     }
+
+     const deckgl = new DeckGL({
+       map: maplibregl,
+       mapStyle: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+       initialViewState: {
+         bearing: 0,
+         latitude: 63,
+         longitude: 23,
+         maxZoom: 15,
+         minZoom: 3,
+         pitch: 0,
+         zoom: 5,
+       },
+       views: [
+         new MapView({
+           id: "map",
+           controller: true,
+         }),
+       ],
+       layers: [],
+       widgets: [
+         new CompassWidget({
+           id: "compass",
+           viewId: "map",
+         }),
+         new ZoomWidget({
+           id: "zoom",
+           viewId: "map",
+         }),
+       ],
+       getTooltip,
+     });
+
+     renderLayer();
+
+     function renderLayer() {
+       const column_layer = new ColumnLayer({
+         id: "ColumnLayer",
+         data: "layers/column_layer.json",
+         extruded: true,
+         radius: 500,
+         pickable: true,
+         autoHighlight: true,
+         getPosition: (d) => [d.lng, d.lat],
+         getFillColor: (d) => d.fill_color,
+         highlightColor: [59, 130, 246, 255],
+         elevationScale: 0,
+       });
+
+       deckgl.setProps({
+         layers: [polygon_layer, column_layer]
+       });
+     }
+
+     function resetElevation() {
+       document.getElementById('elevationScale').value = 6;
+       renderLayer();
+     }
+
+     function toggleMenu() {
+       const panel = document.getElementById('menu-panel');
+       const toggleBtn = document.getElementById('toggle-btn');
+
+       if (panel.classList.contains('hidden')) {
+         panel.classList.remove('hidden');
+         toggleBtn.classList.remove('show');
+       } else {
+         panel.classList.add('hidden');
+         toggleBtn.classList.add('show');
+       }
+     }
+    </script>
+  </body>
+</html>
