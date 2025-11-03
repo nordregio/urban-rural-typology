@@ -43,6 +43,7 @@
        top: 20px;
        right: 20px;
        width: 280px;
+       max-height: calc(100vh - 40px);
        background: rgba(255, 255, 255, 0.95);
        backdrop-filter: blur(10px);
        border-radius: 12px;
@@ -52,6 +53,26 @@
        z-index: 10;
        transition: all 0.3s ease;
        transform: translateX(0);
+       overflow-y: auto;
+       overflow-x: hidden;
+     }
+
+     #menu-panel::-webkit-scrollbar {
+       width: 6px;
+     }
+
+     #menu-panel::-webkit-scrollbar-track {
+       background: rgba(0, 0, 0, 0.05);
+       border-radius: 10px;
+     }
+
+     #menu-panel::-webkit-scrollbar-thumb {
+       background: rgba(0, 0, 0, 0.2);
+       border-radius: 10px;
+     }
+
+     #menu-panel::-webkit-scrollbar-thumb:hover {
+       background: rgba(0, 0, 0, 0.3);
      }
 
      #menu-panel.hidden {
@@ -225,6 +246,7 @@
          top: 16px;
          right: 16px;
          padding: 16px;
+         max-height: calc(100vh - 32px);
        }
 
        #toggle-btn {
@@ -242,6 +264,7 @@
        #menu-panel {
          width: calc(100vw - 32px);
          max-width: 300px;
+         max-height: calc(100vh - 32px);
        }
 
        .legend-tooltip {
